@@ -1,0 +1,179 @@
+name: GPT Search Unified Workflow
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment for release"
+        type: choice
+        required: false
+        default: "none"
+        options:
+          - none
+          - rc-next
+          - staging
+      chart_tag:
+        description: "Force chart version override?"
+        required: false
+        type: string
+        default: ""
+      chart_overwrite:
+        description: "Force chart overwrite?"
+        required: false
+        type: boolean
+        default: false
+      branch:
+        type: string
+        description: "Branch to release"
+        required: false
+  
+  push:
+    branches:
+      - development
+    tags:
+      - "v*.*.*"
+  
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Get version information
+  gpt-version:
+    uses: wasiu-technology-solutions/infra/.github/workflows/get-chart-version-info.yaml@build-image-test
+    secrets: inherit
+    with:
+      chart-path: "./charts/gpt-search/Chart.yaml"
+  
+  agent-flows-version:
+    uses: wasiu-technology-solutions/infra/.github/workflows/get-chart-version-info.yaml@build-image-test
+    secrets: inherit
+    with:
+      chart-path: "./charts/agent-flows/Chart.yaml"
+
+  # Linting and code checks
+  python-linter:
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    uses: wasiu-technology-solutions/infra/.github/workflows/python-linter.yaml@development
+    secrets:
+      repo_token: "${{ secrets.GHA_BOT_REPO_TOKEN }}"
+
+  # Build Docker images (conditional on event type)
+  build-gpt-image:
+    needs: [gpt-version, python-linter]
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@build-image-test
+    with:
+      docker-arch: linux/arm64
+      custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
+    secrets:
+      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+  
+  build-agent-flows-image:
+    needs: [agent-flows-version, python-linter]
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@build-image-test
+    with:
+      docker-arch: linux/arm64
+      dockerfile-path: "./Dockerfile.agentflows"
+      custom-image-name: agent-flows
+      custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
+    secrets:
+      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+      
+  build-migrate-vector-image:
+    needs: [gpt-version, python-linter]
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@build-image-test
+    with:
+      docker-arch: linux/arm64
+      build-target: "migration"
+      custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
+    secrets:
+      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+      
+  build-migrate-agent-image:
+    needs: [agent-flows-version, python-linter]
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@build-image-test
+    with:
+      docker-arch: linux/arm64
+      build-target: "migration"
+      dockerfile-path: "./Dockerfile.agentflows"
+      custom-image-name: agent-flows
+      custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
+    secrets:
+      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+
+  # Run tests
+  docker-tests:
+    name: Run Tests using Docker Image
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: wasiu-runner-fleet
+    needs: build-gpt-image
+    timeout-minutes: 5
+    env:
+      DOCKER_REPO: ${{ needs.build-gpt-image.outputs.docker-repo }}
+      DOCKER_TAG: ${{ needs.build-gpt-image.outputs.docker-tag }}
+      DOCKER_TEST_IMAGE_TAG: gpt-search-test
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Build Test Image
+        run: >
+          docker build
+          --build-arg IMAGE=$DOCKER_REPO:$DOCKER_TAG
+          -f Dockerfile.test
+          -t $DOCKER_TEST_IMAGE_TAG .
+      - name: Execute Pytest
+        run: |
+          set -o pipefail
+          docker run -v /tmp:/tmp $DOCKER_TEST_IMAGE_TAG pytest \
+            --cov-report=term-missing \
+            --junitxml=/tmp/pytest.xml \
+            --cov=gpt_search | tee /tmp/pytest-coverage.txt
+      - name: Pytest coverage comment
+        if: always()
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: /tmp/pytest-coverage.txt
+          junitxml-path: /tmp/pytest.xml
+
+  # Build and Release Helm Charts (conditional based on event type and input)
+  helm-chart-release:
+    needs: [gpt-version, agent-flows-version]
+    if: >
+      (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/development')
+    uses: wasiu-technology-solutions/infra/.github/workflows/build-chart.yaml@development
+    with:
+      chart_dir: charts/gpt-search
+      chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
+      chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
+    secrets: inherit
+
+  agent-chart-release:
+    needs: [gpt-version, agent-flows-version]
+    if: >
+      (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/development')
+    uses: wasiu-technology-solutions/infra/.github/workflows/build-chart.yaml@development
+    with:
+      chart_dir: charts/agent-flows
+      chart_tag: ${{ needs.agent-flows-version.outputs.chart-image-tag-version }}
+      chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
+    secrets: inherit
