@@ -1,0 +1,70 @@
+name: Get Chart Version Info
+on:
+  workflow_call:
+    inputs:
+      chart-path:
+        required: true
+        type: string
+        description: "Path to Chart.yaml file"
+    outputs:
+      chart-version:
+        description: "The chart version from Chart.yaml"
+        value: ${{ jobs.get-version-info.outputs.chart-version }}
+      app-version:
+        description: "The appVersion from Chart.yaml"
+        value: ${{ jobs.get-version-info.outputs.app-version }}
+      chart-image-tag-version:
+        description: "Version tag for the chart image"
+        value: ${{ jobs.get-version-info.outputs.chart-image-tag-version }}
+      app-image-tag-version:
+        description: "Version tag for the app image"
+        value: ${{ jobs.get-version-info.outputs.app-image-tag-version }}
+
+jobs:
+  get-version-info:
+    runs-on: ubuntu-latest
+    outputs:
+      chart-version: ${{ steps.set-versions.outputs.chart-version }}
+      app-version: ${{ steps.set-versions.outputs.app-version }}
+      chart-image-tag-version: ${{ steps.set-versions.outputs.chart-image-tag-version }}
+      app-image-tag-version: ${{ steps.set-versions.outputs.app-image-tag-version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Parse Chart.yaml
+        id: set-versions
+        run: |
+          # Extract chart and app versions from Chart.yaml
+          CHART_PATH="${{ inputs.chart-path }}"
+          
+          if [ ! -f "$CHART_PATH" ]; then
+            echo "Error: Chart file not found at $CHART_PATH"
+            exit 1
+          fi
+          
+          # Extract versions using yq if available, or grep as fallback
+          if command -v yq &> /dev/null; then
+            CHART_VERSION=$(yq eval '.version' "$CHART_PATH")
+            APP_VERSION=$(yq eval '.appVersion' "$CHART_PATH")
+          else
+            CHART_VERSION=$(grep '^version:' "$CHART_PATH" | awk '{print $2}')
+            APP_VERSION=$(grep '^appVersion:' "$CHART_PATH" | awk '{print $2}')
+          fi
+          
+          # Generate image tags
+          CHART_IMAGE_TAG="v${CHART_VERSION}"
+          APP_IMAGE_TAG="v${APP_VERSION}"
+          
+          # Set outputs
+          echo "chart-version=${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "app-version=${APP_VERSION}" >> $GITHUB_OUTPUT
+          echo "chart-image-tag-version=${CHART_IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "app-image-tag-version=${APP_IMAGE_TAG}" >> $GITHUB_OUTPUT
+          
+          # Print for debugging
+          echo "Chart Version: ${CHART_VERSION}"
+          echo "App Version: ${APP_VERSION}"
+          echo "Chart Image Tag: ${CHART_IMAGE_TAG}"
+          echo "App Image Tag: ${APP_IMAGE_TAG}"
