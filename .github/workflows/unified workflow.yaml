@@ -44,7 +44,7 @@ concurrency:
 jobs:
   # Get version information
   gpt-version:
-    uses: wasiu-technology-solutions/infra/.github/workflows/get-chart-version-info.yaml@main
+    uses: ./get-chart-version-info.yaml
     secrets: inherit
     with:
       chart-path: "./charts/gpt-search/Chart.yaml"
