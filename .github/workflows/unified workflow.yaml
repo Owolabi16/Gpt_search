@@ -50,7 +50,7 @@ jobs:
       chart-path: "./charts/gpt-search/Chart.yaml"
   
   agent-flows-version:
-    uses: wasiu-technology-solutions/infra/.github/workflows/get-chart-version-info.yaml@main
+    uses: ./get-chart-version-info.yaml
     secrets: inherit
     with:
       chart-path: "./charts/agent-flows/Chart.yaml"
@@ -58,7 +58,7 @@ jobs:
   # Linting and code checks
   python-linter:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: wasiu-technology-solutions/infra/.github/workflows/python-linter.yaml@development
+    uses: ./python-linter.yaml@development
     secrets:
       repo_token: "${{ secrets.GHA_BOT_REPO_TOKEN }}"
 
@@ -66,7 +66,7 @@ jobs:
   build-gpt-image:
     needs: [gpt-version, python-linter]
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@main
+    uses: ./build-image.yaml@main
     with:
       docker-arch: linux/arm64
       custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
@@ -77,7 +77,7 @@ jobs:
   build-agent-flows-image:
     needs: [agent-flows-version, python-linter]
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@main
+    uses: ./build-image.yaml@main
     with:
       docker-arch: linux/arm64
       dockerfile-path: "./Dockerfile.agentflows"
@@ -90,7 +90,7 @@ jobs:
   build-migrate-vector-image:
     needs: [gpt-version, python-linter]
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@main
+    uses: ./build-image.yaml@main
     with:
       docker-arch: linux/arm64
       build-target: "migration"
@@ -102,7 +102,7 @@ jobs:
   build-migrate-agent-image:
     needs: [agent-flows-version, python-linter]
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: wasiu-technology-solutions/infra/.github/workflows/build-image.yaml@main
+    uses: ./build-image.yaml@main
     with:
       docker-arch: linux/arm64
       build-target: "migration"
@@ -159,7 +159,7 @@ jobs:
     if: >
       (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/development')
-    uses: wasiu-technology-solutions/infra/.github/workflows/build-chart.yaml@development
+    uses: ./build-chart.yaml@development
     with:
       chart_dir: charts/gpt-search
       chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
@@ -171,7 +171,7 @@ jobs:
     if: >
       (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/development')
-    uses: wasiu-technology-solutions/infra/.github/workflows/build-chart.yaml@development
+    uses: ./build-chart.yaml@development
     with:
       chart_dir: charts/agent-flows
       chart_tag: ${{ needs.agent-flows-version.outputs.chart-image-tag-version }}
