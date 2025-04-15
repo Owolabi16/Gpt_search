@@ -1,7 +1,7 @@
 name: Build & Push Helm Chart
 on:
   workflow_call:
-    inputs:
+    # inputs:
       # gpt_chart_tag:
       #   description: "Force Version Override for GPT Chart?"
       #   required: false
