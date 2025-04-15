@@ -1,12 +1,25 @@
 name: Python Linter
 
 on:
+  workflow_call:
+    # This makes the workflow reusable by other workflows
+    inputs:
+      python-version:
+        required: false
+        type: string
+        default: '3.10'
+        description: 'The Python version to use'
+      paths:
+        required: false
+        type: string
+        default: '**.py'
+        description: 'Files to lint, using glob pattern'
   push:
-    branches: [ main, master ]
+    branches: main
     paths:
       - '**.py'
   pull_request:
-    branches: [ main, master ]
+    branches: main
     paths:
       - '**.py'
 
@@ -19,7 +32,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: ${{ inputs.python-version || '3.10' }}
           
       - name: Install dependencies
         run: |
@@ -30,22 +43,26 @@ jobs:
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 ${{ inputs.paths || '.' }} --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+          flake8 ${{ inputs.paths || '.' }} --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
           
       - name: Check formatting with black
         run: |
-          black --check --diff .
+          black --check --diff ${{ inputs.paths || '.' }}
           
       - name: Check imports with isort
         run: |
-          isort --check --diff .
+          isort --check --diff ${{ inputs.paths || '.' }}
           
       - name: Type checking with mypy
         run: |
-          mypy --ignore-missing-imports .
+          mypy --ignore-missing-imports ${{ inputs.paths || '.' }}
           
       - name: Lint with pylint
         run: |
-          pylint --disable=C0111,R0903 $(git ls-files '*.py')
+          if [ "${{ inputs.paths }}" = "**.py" ] || [ -z "${{ inputs.paths }}" ]; then
+            pylint --disable=C0111,R0903 $(git ls-files '*.py')
+          else
+            pylint --disable=C0111,R0903 ${{ inputs.paths }}
+          fi
