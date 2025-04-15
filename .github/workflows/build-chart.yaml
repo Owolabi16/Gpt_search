@@ -2,26 +2,26 @@ name: Build & Push Helm Chart
 on:
   workflow_call:
     inputs:
-      gpt_chart_tag:
-        description: "Force Version Override for GPT Chart?"
-        required: false
-        type: string
-        default: ""
-      gpt_chart_overwrite:
-        description: "Force GPT Chart Overwrite?"
-        required: true
-        type: boolean
-        default: false
-      agent_flow_chart_tag:
-        description: "Force Version Override for Agent Flow?"
-        required: false
-        type: string
-        default: ""
-      agent_flow_chart_overwrite:
-        description: "Force Agent Flow Chart Overwrite?"
-        required: true
-        type: boolean
-        default: false
+      # gpt_chart_tag:
+      #   description: "Force Version Override for GPT Chart?"
+      #   required: false
+      #   type: string
+      #   default: ""
+      # gpt_chart_overwrite:
+      #   description: "Force GPT Chart Overwrite?"
+      #   required: true
+      #   type: boolean
+      #   default: false
+      # agent_flow_chart_tag:
+      #   description: "Force Version Override for Agent Flow?"
+      #   required: false
+      #   type: string
+      #   default: ""
+      # agent_flow_chart_overwrite:
+      #   description: "Force Agent Flow Chart Overwrite?"
+      #   required: true
+      #   type: boolean
+      #   default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
