@@ -169,13 +169,13 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/development')
     uses: ./.github/workflows/build-chart.yaml
     with:
+      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      chart_overwrite: true
       gpt_chart_overwrite: true
       agent_flow_chart_overwrite: true
     # chart_dir: charts/gpt-search
     # chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
     # chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-      chart_overwrite: true
     secrets: inherit
 
   agent-chart-release:
