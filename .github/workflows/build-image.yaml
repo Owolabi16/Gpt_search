@@ -5,9 +5,9 @@ on:
       build-target:
         required: false
         type: string
-      docker-arch:
-        required: true
-        type: string
+      # docker-arch:
+      #   required: true
+      #   type: string
       docker-build-args:
         required: false
         type: string
