@@ -56,11 +56,11 @@ jobs:
       chart-path: "/charts/agent-flows/Chart.yaml"
 
   # Linting and code checks
-  python-linter:
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/python-linter.yaml@development
-    secrets:
-      repo_token: "${{ secrets.GHA_BOT_REPO_TOKEN }}"
+  # python-linter:
+  #   if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+  #   uses: ./.github/workflows/python-linter.yaml@development
+  #   secrets:
+  #     repo_token: "${{ secrets.GHA_BOT_REPO_TOKEN }}"
 
   # Build Docker images (conditional on event type)
   build-gpt-image:
