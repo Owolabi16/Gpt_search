@@ -11,11 +11,11 @@ on:
           - none
           - rc-next
           - staging
-      chart_tag:
-        description: "Force chart version override?"
-        required: false
-        type: string
-        default: ""
+      # chart_tag:
+      #   description: "Force chart version override?"
+      #   required: false
+      #   type: string
+      #   default: ""
       chart_overwrite:
         description: "Force chart overwrite?"
         required: false
