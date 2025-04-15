@@ -217,8 +217,6 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     uses: ./.github/workflows/build-chart.yaml
     with:
-      gpt_chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
-      agent_flow_chart_tag: ${{ needs.agent-flows-version.outputs.chart-image-tag-version }}
-      gpt_chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
-      agent_flow_chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
+      chart_tag: ${{ inputs.chart_tag || needs.gpt-version.outputs.chart-image-tag-version }}
+      chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
     secrets: inherit
