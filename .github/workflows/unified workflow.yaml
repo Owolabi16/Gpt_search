@@ -86,7 +86,7 @@ jobs:
       chart_overwrite: true
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
-      custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
+      # custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
     secrets:
       # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
@@ -116,7 +116,7 @@ jobs:
       build-target: "migration"
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
-      custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
+     #custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
     secrets:
       # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
