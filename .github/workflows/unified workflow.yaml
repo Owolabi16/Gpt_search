@@ -114,7 +114,7 @@ jobs:
   
   build-agent-flows-image:
     needs: agent-fows-version
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -133,26 +133,26 @@ jobs:
       
   build-migrate-vector-image:
   needs: gpt-version
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: false
-          load: true
-          target: migration
-          tags: "ghcr.io/${{ github.repository_owner }}/gpt-search:${{ needs.gpt-version.outputs.app-image-tag-version }}-migration"
-          platforms: linux/amd64
+  if: github.event_name == 'pull_request' || github.event_name == 'push'
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false
+        load: true
+        target: migration
+        tags: "ghcr.io/${{ github.repository_owner }}/gpt-search:${{ needs.gpt-version.outputs.app-image-tag-version }}-migration"
+        platforms: linux/amd64
       
   build-migrate-agent-image:
     needs: agent-fows-version
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -173,7 +173,7 @@ jobs:
   # Run tests
   docker-tests:
     name: Run Tests using Docker Image
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: occasio-runner-fleet
     needs: build-gpt-image
     timeout-minutes: 5
