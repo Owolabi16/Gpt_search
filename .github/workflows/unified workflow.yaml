@@ -72,8 +72,8 @@ jobs:
       chart_overwrite: true
       # custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
     secrets:
-      docker-build-secrets: "github_pat=${{ secrets.TOKEN }}"
-      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+      # docker-build-secrets: "github_pat=${{ secrets.TOKEN }}"
+      # DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
   
   build-agent-flows-image:
     needs: [agent-flows-version, python-linter]
