@@ -11,6 +11,14 @@ on:
       chart_overwrite:
         required: true
         type: boolean
+      dockerfile-path:
+        required: true
+        type: string
+        description: 'Path to the Dockerfile'  
+      custom-image-name:
+        required: true
+        type: string
+        description: 'Name for the built Docker image'  
       is_lib_chart:
         required: false
         type: boolean
