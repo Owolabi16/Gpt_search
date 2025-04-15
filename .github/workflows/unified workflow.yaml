@@ -161,22 +161,22 @@ jobs:
           pytest-coverage-path: /tmp/pytest-coverage.txt
           junitxml-path: /tmp/pytest.xml
 
-  # Build and Release Helm Charts (conditional based on event type and input)
-  helm-chart-release:
-    needs: [gpt-version, agent-flows-version]
-    if: >
-      (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/development')
-    uses: ./.github/workflows/build-chart.yaml
-    with:
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-      chart_overwrite: true
-      gpt_chart_overwrite: true
-      agent_flow_chart_overwrite: true
-    # chart_dir: charts/gpt-search
-    # chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
-    # chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
-    secrets: inherit
+  # # Build and Release Helm Charts (conditional based on event type and input)
+  # helm-chart-release:
+  #   needs: [gpt-version, agent-flows-version]
+  #   if: >
+  #     (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
+  #     (github.event_name == 'push' && github.ref == 'refs/heads/development')
+  #   uses: ./.github/workflows/build-chart.yaml
+  #   with:
+  #     chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+  #     chart_overwrite: true
+  #     gpt_chart_overwrite: true
+  #     agent_flow_chart_overwrite: true
+  #   # chart_dir: charts/gpt-search
+  #   # chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
+  #   # chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
+  #   secrets: inherit
 
   agent-chart-release:
     needs: [gpt-version, agent-flows-version]
