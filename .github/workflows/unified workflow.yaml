@@ -1,5 +1,39 @@
 name: GPT Search Unified Workflow
 on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Target environment for release"
+        type: string
+        required: false
+        default: "none"
+      chart_tag:
+        description: "Force chart version override?"
+        type: string
+        required: false
+        default: ""
+      chart_overwrite:
+        description: "Force chart overwrite?"
+        type: boolean
+        required: false
+        default: false
+      branch:
+        type: string
+        description: "Branch to release"
+        required: false
+    secrets:
+      GHA_BOT_REPO_TOKEN:
+        required: false
+      DOCKER_HUB_TOKEN:
+        required: false
+    outputs:
+      app_image_tag:
+        description: "The app image tag that was built"
+        value: ${{ jobs.gpt-version.outputs.app-image-tag-version }}
+      chart_image_tag:
+        description: "The chart image tag that was built"
+        value: ${{ jobs.gpt-version.outputs.chart-image-tag-version }}
+  
   workflow_dispatch:
     inputs:
       environment:
@@ -11,11 +45,11 @@ on:
           - none
           - rc-next
           - staging
-      # chart_tag:
-      #   description: "Force chart version override?"
-      #   required: false
-      #   type: string
-      #   default: ""
+      chart_tag:
+        description: "Force chart version override?"
+        required: false
+        type: string
+        default: ""
       chart_overwrite:
         description: "Force chart overwrite?"
         required: false
@@ -47,78 +81,100 @@ jobs:
     uses: ./.github/workflows/get-chart-version-info.yaml
     secrets: inherit
     with:
-      chart-path: "./.github/workflows/charts/gpt-search/Chart.yaml"
+      chart-path: "./charts/gpt-search/Chart.yaml"
   
   agent-flows-version:
     uses: ./.github/workflows/get-chart-version-info.yaml
     secrets: inherit
     with:
-      chart-path: "/charts/agent-flows/Chart.yaml"
+      chart-path: "./charts/agent-flows/Chart.yaml"
+
 
   # Build Docker images (conditional on event type)
   build-gpt-image:
-    needs: gpt-version
+  needs: gpt-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/build-image.yaml
-    with:
-      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-      # chart_overwrite: true
-      dockerfile-path: "./Dockerfile.agentflows"
-      custom-image-name: agent-flows
-      # custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
-    secrets:
-      # docker-build-secrets: "github_pat=${{ secrets.TOKEN }}"
-      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+    runs-on: ubuntu-latest
+    outputs:
+      docker-repo: "ghcr.io/${{ github.repository_owner }}/gpt-search"
+      docker-tag: "${{ needs.gpt-version.outputs.app-image-tag-version }}"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          load: true
+          tags: "ghcr.io/${{ github.repository_owner }}/gpt-search:${{ needs.gpt-version.outputs.app-image-tag-version }}"
+          platforms: linux/amd64
   
   build-agent-flows-image:
-    needs: agent-flows-version
+    needs: agent-fows-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/build-image.yaml
-    with:
-      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-      # chart_overwrite: true
-      dockerfile-path: "./Dockerfile.agentflows"
-      custom-image-name: agent-flows
-      # custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
-    secrets:
-      # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
-      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.agentflows
+          push: false
+          load: true
+          tags: "ghcr.io/${{ github.repository_owner }}/agent-flows:${{ needs.agent-flows-version.outputs.app-image-tag-version }}"
+          platforms: linux/amd64
       
   build-migrate-vector-image:
-    needs: gpt-version
+  needs: gpt-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/build-image.yaml
-    with:
-      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-      # chart_overwrite: true
-      dockerfile-path: "./Dockerfile.agentflows"
-      custom-image-name: agent-flows
-      # build-target: "migration"
-      # custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
-    secrets:
-      # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
-      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          load: true
+          target: migration
+          tags: "ghcr.io/${{ github.repository_owner }}/gpt-search:${{ needs.gpt-version.outputs.app-image-tag-version }}-migration"
+          platforms: linux/amd64
       
   build-migrate-agent-image:
-    needs: agent-flows-version
+    needs: agent-fows-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/build-image.yaml
-    with:
-      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-      # chart_overwrite: true
-      # build-target: "migration"
-      dockerfile-path: "./Dockerfile.agentflows"
-      custom-image-name: agent-flows
-     #custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
-    secrets:
-      # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
-      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.agentflows
+          push: false
+          load: true
+          target: migration
+          tags: "ghcr.io/${{ github.repository_owner }}/agent-flows:${{ needs.agent-flows-version.outputs.app-image-tag-version }}-migration"
+          platforms: linux/amd64
 
   # Run tests
   docker-tests:
     name: Run Tests using Docker Image
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    runs-on: wasiu-runner-fleet
+    runs-on: occasio-runner-fleet
     needs: build-gpt-image
     timeout-minutes: 5
     env:
@@ -154,33 +210,16 @@ jobs:
           pytest-coverage-path: /tmp/pytest-coverage.txt
           junitxml-path: /tmp/pytest.xml
 
-  # # Build and Release Helm Charts (conditional based on event type and input)
-  # helm-chart-release:
-  #   needs: [gpt-version, agent-flows-version]
-  #   if: >
-  #     (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
-  #     (github.event_name == 'push' && github.ref == 'refs/heads/development')
-  #   uses: ./.github/workflows/build-chart.yaml
-  #   with:
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
-  #     chart_overwrite: true
-  #     gpt_chart_overwrite: true
-  #     agent_flow_chart_overwrite: true
-  #   # chart_dir: charts/gpt-search
-  #   # chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
-  #   # chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
-  #   secrets: inherit
-
-  agent-chart-release:
+  # Build and Release Helm Charts (conditional based on event type and input)
+  helm-chart-release:
     needs: [gpt-version, agent-flows-version]
     if: >
       (github.event_name == 'workflow_dispatch' && inputs.environment != 'none') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/development')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     uses: ./.github/workflows/build-chart.yaml
-    # with:
-      # chart_dir: charts/agent-flows
-      # chart_tag: ${{ needs.agent-flows-version.outputs.chart-image-tag-version }}
-      # chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
-      # chart_dir: "./.github/workflows/charts/gpt-search/Chart.yaml"
-      # chart_overwrite: true
+    with:
+      gpt_chart_tag: ${{ needs.gpt-version.outputs.chart-image-tag-version }}
+      agent_flow_chart_tag: ${{ needs.agent-flows-version.outputs.chart-image-tag-version }}
+      gpt_chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
+      agent_flow_chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
     secrets: inherit
