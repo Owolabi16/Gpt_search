@@ -91,7 +91,7 @@ jobs:
 
   # Build Docker images (conditional on event type)
   build-gpt-image:
-    needs: gpt-version
+    needs: [gpt-version]
     if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
@@ -132,7 +132,7 @@ jobs:
           platforms: linux/amd64
       
   build-migrate-vector-image:
-  needs: gpt-version
+  needs: [gpt-version]
   if: github.event_name == 'pull_request' || github.event_name == 'push'
   runs-on: ubuntu-latest
   steps:
