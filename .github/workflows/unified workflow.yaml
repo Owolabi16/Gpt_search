@@ -101,7 +101,7 @@ jobs:
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
       build-target: "migration"
-      custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
+      # custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
     secrets:
       # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
