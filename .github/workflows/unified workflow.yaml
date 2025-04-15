@@ -71,9 +71,9 @@ jobs:
       chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       chart_overwrite: true
       # custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
-    # secrets:
+    secrets:
       # docker-build-secrets: "github_pat=${{ secrets.TOKEN }}"
-      # DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
+      DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
   
   build-agent-flows-image:
     needs: [agent-flows-version, python-linter]
