@@ -188,6 +188,6 @@ jobs:
       # chart_dir: charts/agent-flows
       # chart_tag: ${{ needs.agent-flows-version.outputs.chart-image-tag-version }}
       # chart_overwrite: ${{ inputs.chart_overwrite == true || github.event_name == 'push' }}
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      chart_dir: "./.github/workflows/charts/gpt-search/Chart.yaml"
       chart_overwrite: true
     secrets: inherit
