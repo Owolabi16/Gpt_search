@@ -68,7 +68,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      chart_dir: './charts/gpt-search/Chart.yaml
+      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       chart_overwrite: true
       docker-arch: linux/arm64
       custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
