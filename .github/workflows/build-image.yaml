@@ -5,9 +5,9 @@ on:
       chart_dir:
         required: true
         type: string
-      chart_tag:
-        required: false
-        type: string
+      # chart_tag:
+      #   required: false
+      #   type: string
       chart_overwrite:
         required: true
         type: boolean
@@ -43,7 +43,7 @@ jobs:
     runs-on: occasio-runner-fleet
     env:
       REGISTRY: ghcr.io/occasio-technology-solutions
-      CHART_TAG: ${{ inputs.chart_tag }}
+      # CHART_TAG: ${{ inputs.chart_tag }}
       HELM_TEMPLATE: template.yaml
       DOCKER_HUB_USER: occasio
     steps:
