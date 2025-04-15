@@ -89,7 +89,6 @@ jobs:
     with:
       chart-path: "./charts/agent-flows/Chart.yaml"
 
-
   # Build Docker images (conditional on event type)
   build-gpt-image:
     needs: gpt-version
