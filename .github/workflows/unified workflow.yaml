@@ -61,7 +61,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       # chart_overwrite: true
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
@@ -75,7 +75,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       # chart_overwrite: true
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
@@ -89,7 +89,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       # chart_overwrite: true
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
@@ -104,7 +104,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      # chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       # chart_overwrite: true
       # build-target: "migration"
       dockerfile-path: "./Dockerfile.agentflows"
@@ -162,7 +162,7 @@ jobs:
   #     (github.event_name == 'push' && github.ref == 'refs/heads/development')
   #   uses: ./.github/workflows/build-chart.yaml
   #   with:
-  #     chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
+      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
   #     chart_overwrite: true
   #     gpt_chart_overwrite: true
   #     agent_flow_chart_overwrite: true
