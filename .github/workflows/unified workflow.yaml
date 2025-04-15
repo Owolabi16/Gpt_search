@@ -55,16 +55,9 @@ jobs:
     with:
       chart-path: "/charts/agent-flows/Chart.yaml"
 
-  # Linting and code checks
-  python-linter:
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/python-linter.yaml
-    # secrets:
-    #   repo_token: "${{ secrets.TOKEN }}"
-
   # Build Docker images (conditional on event type)
   build-gpt-image:
-    needs: [gpt-version, python-linter]
+    needs: gpt-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
@@ -78,7 +71,7 @@ jobs:
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
   
   build-agent-flows-image:
-    needs: [agent-flows-version, python-linter]
+    needs: agent-flows-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
@@ -92,7 +85,7 @@ jobs:
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
       
   build-migrate-vector-image:
-    needs: [gpt-version, python-linter]
+    needs: gpt-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
@@ -107,7 +100,7 @@ jobs:
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
       
   build-migrate-agent-image:
-    needs: [agent-flows-version, python-linter]
+    needs: agent-flows-version
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:

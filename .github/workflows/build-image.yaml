@@ -1,123 +1,153 @@
-name: Build and Push Helm Chart
+name: Build Image and Push to GHCR
 on:
   workflow_call:
     inputs:
-      chart_dir:
+      build-target:
+        required: false
+        type: string
+      docker-arch:
         required: true
         type: string
-      # chart_tag:
-      #   required: false
-      #   type: string
-      chart_overwrite:
-        required: true
-        type: boolean
+      docker-build-args:
+        required: false
+        type: string
+      pre-build-script:
+        required: false
+        type: string
       dockerfile-path:
-        required: true
+        required: false
         type: string
-        description: 'Path to the Dockerfile'  
+        default: "./Dockerfile"
       custom-image-name:
-        required: true
-        type: string
-        description: 'Name for the built Docker image'  
-      is_lib_chart:
-        required: false
-        type: boolean
-        default: false
-      # chart_name Deprecated
-      chart_name:
         required: false
         type: string
-      pre_build_script:
+      custom-image-tag:
         required: false
         type: string
-      git_branch:
+      custom-image-tag-alt:
         required: false
         type: string
-        default: ''
     secrets:
+      docker-build-secrets:
+        required: false
       DOCKER_HUB_TOKEN:
-        required: true
+        required: false
+    outputs:
+      docker-tag:
+        description: Docker Tag Value
+        value: ${{ jobs.build-image.outputs.docker-tag }}
+      docker-repo:
+        description: Docker Registry and Repo without Tag
+        value: ${{ jobs.build-image.outputs.docker-repo }}
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_HUB_USER: occasio
 
 jobs:
-  helm-chart-release:
+  build-image:
+    name: Build Image With Dockerfile Target '${{ inputs.build-target }}'
     runs-on: occasio-runner-fleet
-    env:
-      REGISTRY: ghcr.io/occasio-technology-solutions
-      # CHART_TAG: ${{ inputs.chart_tag }}
-      HELM_TEMPLATE: template.yaml
-      DOCKER_HUB_USER: occasio
+    outputs:
+      docker-tag: ${{ steps.meta.outputs.version }}
+      docker-repo: ${{ steps.docker-repo.outputs.DOCKER_REPOSITORY }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.git_branch }}
-          
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ env.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-          
-      - name: Helm Registry Login
-        run: >
-          echo ${{ github.token }} |
-          helm registry login $REGISTRY
-          --username occasio-machine
-          --password-stdin
-          
-      - name: Run Pre-Build User-defined script
-        if: ${{ inputs.pre_build_script != '' }}
-        run: bash -c '${{ inputs.pre_build_script }}'
-        
-      - name: Generate Docs
-        continue-on-error: true
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: occasio-technology-solutions/helm-docs-action@occasio-development
+      - name: Github Repo Var to lower
+        run: echo "DOCKER_REPOSITORY=$( echo ${{ env.REGISTRY }}/${{ github.repository }} | awk '{print tolower($0)}' )" >> $GITHUB_ENV
+      - name: Github Repo Var Output
+        id: docker-repo
+        run: echo "DOCKER_REPOSITORY=$( echo ${{ env.REGISTRY }}/${{ github.repository }} | awk '{print tolower($0)}' )" >> $GITHUB_OUTPUT
+      - name: Github Repo Owner to Lower
+        run: echo "REPO_OWNER=$( echo ${{ github.repository_owner }} | awk '{print tolower($0)}' )" >> $GITHUB_ENV
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Context for Buildx
+        run: docker context create builder
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
         with:
-          working-dir: ${{ inputs.chart_dir }}
-          git-push: "true"
-          
-      - name: Install Dependencies
-        run: helm dep build ${{ inputs.chart_dir }} --skip-refresh
-        
-      - name: Helm Lint
-        run: helm lint ${{ inputs.chart_dir }}
-        
-      - name: Generate template.yaml
-        if: ${{ !inputs.is_lib_chart }}
-        run: helm template ${{ inputs.chart_dir }} > ${{ inputs.chart_dir }}/$HELM_TEMPLATE && cat ${{ inputs.chart_dir }}/$HELM_TEMPLATE
-        
-      - name: KubeVal Kubernetes Objects
-        if: ${{ !inputs.is_lib_chart }}
-        run: >
-          docker run --rm -v $(pwd)/${{ inputs.chart_dir }}:/data
-          cytopia/kubeval
-          $HELM_TEMPLATE
-          --output=stdout
-          --strict
-          --ignore-missing-schemas
-          
-      - run: rm -f ${{ inputs.chart_dir }}/$HELM_TEMPLATE
-        if: ${{ !inputs.is_lib_chart }}
-        
-      - name: Get Chart Name from Chart.yaml
-        run: echo "CHART_NAME=$(yq eval .name ${{ inputs.chart_dir }}/Chart.yaml)" >> $GITHUB_ENV
-        
-      - name: Get Chart Tag/version from Chart.yaml if not inputted
-        if: ${{ inputs.chart_tag == '' }}
-        run: echo "CHART_TAG=$(yq eval .version ${{ inputs.chart_dir }}/Chart.yaml)" >> $GITHUB_ENV
-        
-      - name: Chart Registry Overwrite Protection
-        if: ${{ inputs.chart_overwrite == false }}
-        run: '! $(helm pull oci://$REGISTRY/chart/$CHART_NAME --version $CHART_TAG)'
-        
-      - name: Release Helm Chart to GHCR
-        uses: appany/helm-oci-chart-releaser@v0.4.0
+          endpoint: builder
+          driver-opts: |
+            image=moby/buildkit:v0.10.6
+      - name: Login to GHCR
+        uses: docker/login-action@v2
         with:
-          name: ${{ env.CHART_NAME }}
-          repository: "chart"
-          tag: ${{ env.CHART_TAG }}
-          path: ${{ inputs.chart_dir }}
           registry: ${{ env.REGISTRY }}
-          registry_username: occasio-machine
-          registry_password: ${{ github.token }}
+          username: occasio-machine
+          password: ${{ github.token }}
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ inputs.custom-image-name != '' && format('{0}/{1}/{2}', env.REGISTRY, github.repository_owner, inputs.custom-image-name)  || env.DOCKER_REPOSITORY }}
+          tags: |
+            type=raw,priority=9999,value=${{ inputs.custom-image-tag != '' && format('{0}{1}', inputs.custom-image-tag, inputs.build-target != '' && format('-{0}', inputs.build-target) || '') || '' }}
+            type=raw,priority=9998,value=${{ inputs.custom-image-tag-alt != '' && format('{0}{1}', inputs.custom-image-tag-alt, inputs.build-target != '' && format('-{0}', inputs.build-target) || '') || '' }}
+            type=schedule
+            type=ref,event=branch,pattern={{major}},suffix=${{ inputs.build-target != '' && format( '-{0}', inputs.build-target) || ''}}
+            type=ref,event=pr,suffix=${{ inputs.build-target != '' && format( '-{0}', inputs.build-target) || ''}}
+            type=semver,pattern={{version}},suffix=${{ inputs.build-target != '' && format( '-{0}', inputs.build-target) || ''}}
+            type=semver,pattern={{major}}.{{minor}},suffix=${{ inputs.build-target != '' && format( '-{0}', inputs.build-target) || ''}}
+            type=semver,pattern={{major}},suffix=${{ inputs.build-target != '' && format( '-{0}', inputs.build-target) || ''}}
+            type=sha,pattern={{major}},suffix=${{ inputs.build-target != '' && format( '-{0}', inputs.build-target) || ''}}
+            type=raw,value=${{ inputs.build-target }}
+      - name: Tag Info
+        run: |
+          echo "generated tags image: ${{ steps.meta.outputs.tags }}"
+          echo "custom-image-tag  ${{ inputs.custom-image-tag }}"
+          echo "custom-image-tag-alt  ${{ inputs.custom-image-tag-alt }}"
+      - name: Run Pre-Build User-defined script
+        run: bash -c '${{ inputs.pre-build-script }}'
+      - name: Git checkout, Build and push
+        id: build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          build-args: ${{ inputs.docker-build-args }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          file: ${{ inputs.dockerfile-path }}
+          platforms: ${{ inputs.docker-arch }}
+          pull: true
+          no-cache: false
+          secrets: ${{ secrets.docker-build-secrets }}
+          cache-from: type=registry,ref=${{ inputs.custom-image-name != '' && format('{0}/{1}/{2}', env.REGISTRY, env.REPO_OWNER, inputs.custom-image-name) || env.DOCKER_REPOSITORY }}:buildcache
+          cache-to: type=registry,ref=${{ inputs.custom-image-name != '' && format('{0}/{1}/{2}', env.REGISTRY, env.REPO_OWNER, inputs.custom-image-name)  || env.DOCKER_REPOSITORY }}:buildcache,mode=max
+          target: ${{ inputs.build-target }}
+  scan-image:
+    name: Scan Docker Image for Critical Vulnerabilities
+    runs-on: ubuntu-latest
+    needs: build-image
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ env.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: occasio-machine
+          password: ${{ github.token }}
+      - name: Checkout Repo for .grype.yaml
+        uses: actions/checkout@v3
+      - name: Github Repo Owner to Lower
+        run: echo "REPO_OWNER=$( echo ${{ github.repository_owner }} | awk '{print tolower($0)}' )" >> $GITHUB_ENV
+      - name: Security Scan
+        uses: anchore/scan-action@v3
+        with:
+          image: ${{ inputs.custom-image-name != '' && inputs.custom-image-tag != '' && format('{0}/{1}/{2}:{3}', env.REGISTRY, env.REPO_OWNER, inputs.custom-image-name, inputs.custom-image-tag) || format('{0}:{1}', needs.build-image.outputs.docker-repo, needs.build-image.outputs.docker-tag) }}
+          fail-build: false
+          severity-cutoff: critical
+          output-format: table
+          only-fixed: true
