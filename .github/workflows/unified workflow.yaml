@@ -66,7 +66,7 @@ jobs:
   build-gpt-image:
     needs: [gpt-version, python-linter]
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-    uses: ./.github/workflows/build-image.yaml@main
+    uses: ./.github/workflows/build-image.yaml
     with:
       docker-arch: linux/arm64
       custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
