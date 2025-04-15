@@ -55,7 +55,7 @@ jobs:
     with:
       chart-path: "/charts/agent-flows/Chart.yaml"
 
-  Linting and code checks
+  # Linting and code checks
   python-linter:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/python-linter.yaml
