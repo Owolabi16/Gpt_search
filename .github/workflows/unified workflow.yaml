@@ -80,12 +80,12 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      docker-arch: linux/arm64
+      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
       custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
     secrets:
-      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
       
   build-migrate-vector-image:
@@ -93,11 +93,11 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      docker-arch: linux/arm64
+      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       build-target: "migration"
       custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
     secrets:
-      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
       
   build-migrate-agent-image:
@@ -105,13 +105,13 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/build-image.yaml
     with:
-      docker-arch: linux/arm64
+      chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       build-target: "migration"
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
       custom-image-tag: ${{ needs.agent-flows-version.outputs.app-image-tag-version }}
     secrets:
-      docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
+      # docker-build-secrets: "github_pat=${{ secrets.GHA_BOT_REPO_TOKEN }}"
       DOCKER_HUB_TOKEN: "${{ secrets.DOCKER_HUB_TOKEN }}"
 
   # Run tests
