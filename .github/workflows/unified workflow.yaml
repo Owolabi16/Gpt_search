@@ -70,6 +70,8 @@ jobs:
     with:
       chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       chart_overwrite: true
+      dockerfile-path: "./Dockerfile.agentflows"
+      custom-image-name: agent-flows
       # custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
     secrets:
       # docker-build-secrets: "github_pat=${{ secrets.TOKEN }}"
@@ -96,6 +98,8 @@ jobs:
     with:
       chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       chart_overwrite: true
+      dockerfile-path: "./Dockerfile.agentflows"
+      custom-image-name: agent-flows
       build-target: "migration"
       custom-image-tag: ${{ needs.gpt-version.outputs.app-image-tag-version }}
     secrets:
@@ -109,6 +113,8 @@ jobs:
     with:
       chart_dir: ./.github/workflows/charts/gpt-search/Chart.yaml
       chart_overwrite: true
+      dockerfile-path: "./Dockerfile.agentflows"
+      custom-image-name: agent-flows
       build-target: "migration"
       dockerfile-path: "./Dockerfile.agentflows"
       custom-image-name: agent-flows
