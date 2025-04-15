@@ -59,8 +59,8 @@ jobs:
   python-linter:
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     uses: ./.github/workflows/python-linter.yaml
-    secrets:
-      repo_token: "${{ secrets.TOKEN }}"
+    # secrets:
+    #   repo_token: "${{ secrets.TOKEN }}"
 
   # Build Docker images (conditional on event type)
   build-gpt-image:
